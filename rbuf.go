@@ -347,6 +347,7 @@ func (b *FixedSizeRingBuf) ReadFromReader(r io.Reader) (n int64, err error) {
 	if e != nil {
 		return n, e
 	}
+	return
 }
 
 // Reset quickly forgets any data stored in the ring buffer. The
