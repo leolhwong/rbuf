@@ -348,15 +348,17 @@ func (b *FixedSizeRingBuf) ReadFromRawConn(r syscall.RawConn) (n int64, err erro
 		// break the Read if no data or data read
 		return operr == syscall.EAGAIN || m > 0
 	})
-	n += int64(m)
-	b.Readable += m
+	if m > 0 {
+		n += int64(m)
+		b.Readable += m
+	}
 	if e == io.EOF {
 		return n, nil
 	}
 	if e != nil {
 		return n, e
 	}
-	return
+	return n, nil
 }
 
 // Reset quickly forgets any data stored in the ring buffer. The
