@@ -10,7 +10,10 @@ package rbuf
 // http://golang.org/pkg/io/#Reader for example) are
 // copyright 2010 The Go Authors.
 
-import "io"
+import (
+	"io"
+	"syscall"
+)
 
 // FixedSizeRingBuf:
 //
@@ -329,7 +332,7 @@ func (b *FixedSizeRingBuf) ReadFrom(r io.Reader) (n int64, err error) {
 // ReadFromReader() reads data from r until EOF or error. The return value n
 // is the number of bytes read. Any error except io.EOF encountered
 // during the read is also returned.
-func (b *FixedSizeRingBuf) ReadFromReader(r io.Reader) (n int64, err error) {
+func (b *FixedSizeRingBuf) ReadFromRawConn(r syscall.RawConn) (n int64, err error) {
 	writeCapacity := b.N - b.Readable
 	if writeCapacity <= 0 {
 		// we are all full
@@ -338,7 +341,13 @@ func (b *FixedSizeRingBuf) ReadFromReader(r io.Reader) (n int64, err error) {
 	writeStart := (b.Beg + b.Readable) % b.N
 	upperLim := intMin(writeStart+writeCapacity, b.N)
 
-	m, e := r.Read(b.A[b.Use][writeStart:upperLim])
+	var m int
+	e := r.Read(func(s uintptr) bool {
+		var operr error
+		m, operr = syscall.Read(int(s), b.A[b.Use][writeStart:upperLim])
+		// break the Read if no data or data read
+		return operr == syscall.EAGAIN || m > 0
+	})
 	n += int64(m)
 	b.Readable += m
 	if e == io.EOF {
