@@ -328,8 +328,8 @@ func (b *FixedSizeRingBuf) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 }
 
-// ReadFromReader avoids intermediate allocation and copies.
-// ReadFromReader() reads data from r until EOF or error. The return value n
+// ReadFromRawConn avoids intermediate allocation and copies.
+// ReadFromRawConn() reads data from r. The return value n
 // is the number of bytes read. Any error except io.EOF encountered
 // during the read is also returned.
 func (b *FixedSizeRingBuf) ReadFromRawConn(r syscall.RawConn) (n int64, err error) {
@@ -345,7 +345,7 @@ func (b *FixedSizeRingBuf) ReadFromRawConn(r syscall.RawConn) (n int64, err erro
 	e := r.Read(func(s uintptr) bool {
 		var operr error
 		m, operr = syscall.Read(int(s), b.A[b.Use][writeStart:upperLim])
-		// break the Read if no data or data read
+		// break Read if no data or data read
 		return operr == syscall.EAGAIN || m > 0
 	})
 	if m > 0 {
